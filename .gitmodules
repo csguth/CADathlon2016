@@ -1,0 +1,3 @@
+[submodule "p1-CircuitDesignAndAnalysis-WeibullDelay/graph-template-library"]
+	path = p1-CircuitDesignAndAnalysis-WeibullDelay/graph-template-library
+	url = https://github.com/rdmpage/graph-template-library.git
