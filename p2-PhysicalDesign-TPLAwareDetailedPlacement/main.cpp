@@ -1,60 +1,33 @@
 #include <iostream>
 #include <GTL/graph.h>
-#include<vector>
-#include<list>
-
-using location_type = double;
-using id_type = int;
-using width_type = unsigned;
-using coordinate_type = unsigned;
-
-#define INVALID_ID -1
-
-class cell{
-    public:
-        cell() : location(std::make_pair(0.0, 0.0)), id(INVALID_ID), width(0)
-        {
-        }
-        
-        cell(std::pair<location_type, location_type> loc, id_type id, width_type width) : location(loc), id(id), width(width)
-        {
-        }
-        
-        std::pair<location_type, location_type> location;
-        id_type id;
-        width_type width;
-};
-
-class row{
-    public:
-        row() : number_of_sites(0), starting_y_coordinate(0)
-        {
-        }
-
-        row(size_t num_sites, unsigned y_coord) : number_of_sites(num_sites), starting_y_coordinate(y_coord)
-        {
-        }
-
-        size_t number_of_sites;
-        coordinate_type starting_y_coordinate;
-        std::list<id_type> cell_ids_in_current_row;
-};  
-
-class placement{
-    public: 
-        placement(size_t num_cells, size_t num_rows) : cells(num_cells), rows(num_rows)
-        {
-        }
-        
-        std::vector<cell> cells;
-        std::vector<row> rows;
-};
+#include "placement.h"
+#include <assert.h>
 
 int main() {
-    std::cout << "hello world" << std::endl;
+    std::cout << "TPL Detailed Placement" << std::endl;
 
-    graph G;
-    G.new_node();
+    Placement placement(5, 2, 5);
+    //Add Rows
+    id_type r1 = placement.rows.add(20, 0);
+    id_type r2 = placement.rows.add(20, 0);
+    id_type r3 = placement.rows.add(20, 0);
+    id_type r4 = placement.rows.add(20, 0);
+    id_type r5 = placement.rows.add(20, 0);
+    //Add Cells
+    id_type c1 = placement.cells.add(std::make_pair(0,0), 5);
+    id_type c2 = placement.cells.add(std::make_pair(10,0), 8);
+    id_type c3 = placement.cells.add(std::make_pair(0,30), 6);
+    id_type c4 = placement.cells.add(std::make_pair(10,30), 5);
+    id_type c5 = placement.cells.add(std::make_pair(5,40), 3);
+    id_type c6 = placement.cells.add(std::make_pair(14,40), 5);
+    //Add Nets
+    id_type n1 = placement.nets.add({c1, c2});
+    id_type n2 = placement.nets.add({c3, c4, c5, c6});
 
+    assert(placement.hpwl(n1) == 10);
+    assert(placement.hpwl(n2) == 24);
+
+
+    std::cout << "Done! " << std::endl;
     return 0;
 }
