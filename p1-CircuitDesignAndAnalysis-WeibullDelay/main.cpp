@@ -5,6 +5,12 @@
 #include <iterator>
 #include <vector>
 #include <queue>
+#include <cstdio>
+#include <array>
+#include <cmath>
+#include <cassert>
+#include <functional>
+#include <numeric>
 
 template <class T>
 struct range {
@@ -37,17 +43,21 @@ public:
 
    ~RCTree() {
 
+   }\
+
+   node fromId(uint32_t id) {
+       return nodes_[id];
    }
 
-   void connect(uint32_t u, uint32_t v, double resistance) {
-      auto edge = G_.new_edge(nodes_[u], nodes_[v]);
+   void connect(const node& u, const node& v, double resistance) {
+      auto edge = G_.new_edge(u, v);
       resistance_[edge] = resistance;
    }
-   void cap(uint32_t u, double capacitance) {
-     capacitance_[nodes_[u]] = capacitance;
+   void cap(const node & u, double capacitance) {
+     capacitance_[u] = capacitance;
    }
 
-   void build(uint32_t source) {
+   void build(const node& source) {
 
      node_map<bool> touched(G_);
      auto nodes = makeRange(G_.nodes_begin(), G_.nodes_end());
@@ -56,9 +66,8 @@ public:
      }
      std::queue<node> Q;
      {
-         node &src = nodes_[source];
-         Q.push(src);
-         touched[src] = true;
+         Q.push(source);
+         touched[source] = true;
      }
      pred_.reset(new node_map< std::tuple<node, edge> >(G_));
      while(!Q.empty()) {
@@ -154,22 +163,32 @@ public:
         }
     }
     
-    double firstMoment(const node & n) const {
-	return firstMoment_[n];
-    }
-    
-    double secondMoment(const node & n) const {
-        return secondMoment_[n];
-    }
+    template<uint32_t N>
+    double moment(const node& n) const;
+
 private:
    RCTree& tree_;
    node_map<double> firstMoment_;
    node_map<double> secondMoment_;
 };
 
-#include <cstdio>
-#include <array>
-static std::array<double, 15> Rs {
+template <>
+double Elmore::moment<0>(const node&n) const {
+    return 1.0;
+}
+
+template <>
+double Elmore::moment<1>(const node&n) const {
+    return firstMoment_[n];
+}
+
+template <>
+double Elmore::moment<2>(const node&n) const {
+    return secondMoment_[n];
+}
+
+
+static constexpr std::array<double, 15> Rs {
     {0.63096,
     0.79433,
     1.00000,
@@ -187,7 +206,7 @@ static std::array<double, 15> Rs {
     15.84893}
 };
 
-static std::array<double, 15> log10R {
+static constexpr std::array<double, 15> log10R {
     {-0.2,
     -0.1,
     0.0,
@@ -205,7 +224,7 @@ static std::array<double, 15> log10R {
     1.2 }
 };
 
-static std::array<double, 15> thetas {
+static constexpr std::array<double, 15> thetas {
     { 0.48837,
     0.76029,
     1.00000,
@@ -223,9 +242,10 @@ static std::array<double, 15> thetas {
     3.37098 }
 };
 
-#include <cmath>
-
 double GAMMA(double value) {
+    if(value > 2.0) {
+        return (value-1.0)*GAMMA(value-1.0);
+    }
     static constexpr std::array<double, 11> LUT {
       {1.0,
        0.95135,
@@ -249,55 +269,94 @@ double D2M(double m1, double m2) {
     return std::pow(m1, 2.0)*std::log(2.0) / std::sqrt(m2);
 }
 
+double f(const double kR, const double x) {
+    auto den = GAMMA(1.0+x);
+    auto denSquared = den*den;
+    return (GAMMA(1.0+(x+x))/(denSquared+denSquared))-kR;
+}
+
+double bisection(double a, double b, std::function<double(double)> fx) {
+    const uint32_t NMAX = 50;
+    uint32_t N = 1;
+    const double kEpsilon = 1e-10;
+    while(N <= NMAX) {
+        const double c = (a+b)/2.0;
+        const double fxc = fx(c);
+        if(std::abs(fxc) < kEpsilon || (b-a)/2.0 < kEpsilon ) {
+            return c;
+        }
+        ++N;
+        if(std::signbit(fxc) == std::signbit(fx(a)))
+        {
+            a = c;
+        } else {
+            b = c;
+        }
+    }
+    assert(false);
+}
+
+double THETA(double r) {
+    std::function<double(double)> fx = std::bind(&f, r, std::placeholders::_1);
+    return bisection(0.48837, 3.37098, fx);
+}
+
+
 int main(int argc, char* argv[]) {
-/*    RCTree tree(8);
+    RCTree tree(8);
     
-    tree.capacitance(0, 0.0);
-    tree.capacitance(1, 0.5);
-    tree.capacitance(2, 1.0);
-    tree.capacitance(3, 1.0);
-    tree.capacitance(4, 1.0);
-    tree.capacitance(5, 1.2);
-    tree.capacitance(6, 1.0);
-    tree.capacitance(7, 1.2);
+    tree.cap(tree.fromId(0), 0.0);
+    tree.cap(tree.fromId(1), 0.5e-12);
+    tree.cap(tree.fromId(2), 1e-12);
+    tree.cap(tree.fromId(3), 1e-12);
+    tree.cap(tree.fromId(4), 1e-12);
+    tree.cap(tree.fromId(5), 1e-12);
+    tree.cap(tree.fromId(6), 1e-12);
+    tree.cap(tree.fromId(7), 1e-12);
 
-    tree.connect(0, 1, 80.0);
-    tree.connect(1, 2, 60.0);
-    tree.connect(2, 3, 60.0);
-    tree.connect(3, 4, 60.0);
-    tree.connect(4, 5, 60.0);
-    tree.connect(1, 6, 60.0);
-    tree.connect(6, 7, 60.0);
+    tree.connect(tree.fromId(0), tree.fromId(1), 80.0);
+    tree.connect(tree.fromId(1), tree.fromId(2), 60.0);
+    tree.connect(tree.fromId(2), tree.fromId(3), 60.0);
+    tree.connect(tree.fromId(3), tree.fromId(4), 60.0);
+    tree.connect(tree.fromId(4), tree.fromId(5), 60.0);
+    tree.connect(tree.fromId(1), tree.fromId(6), 60.0);
+    tree.connect(tree.fromId(6), tree.fromId(7), 60.0);
 
-    tree.print(std::cout);
-  */
-    RCTree tree(7);
-    tree.cap(0, 0.0);
-    tree.cap(1, 10e-9);
-    tree.cap(2, 13e-9);
-    tree.cap(3, 11e-9);
-    tree.cap(4, 12e-9);
-    tree.cap(5, 17e-9);
-    tree.cap(6, 14e-9);
+//    RCTree tree(7);
+//    tree.cap(tree.fromId(0), 0.0);
+//    tree.cap(tree.fromId(1), 10e-9);
+//    tree.cap(tree.fromId(2), 13e-9);
+//    tree.cap(tree.fromId(3), 11e-9);
+//    tree.cap(tree.fromId(4), 12e-9);
+//    tree.cap(tree.fromId(5), 17e-9);
+//    tree.cap(tree.fromId(6), 14e-9);
 
-    tree.connect(0, 1, 5);
-    tree.connect(1, 2, 16);
-    tree.connect(2, 3, 15);
-    tree.connect(3, 4, 3);
-    tree.connect(4, 5, 11);
-    tree.connect(5, 6, 19);
+//    tree.connect(tree.fromId(0), tree.fromId(1), 5);
+//    tree.connect(tree.fromId(1), tree.fromId(2), 16);
+//    tree.connect(tree.fromId(2), tree.fromId(3), 15);
+//    tree.connect(tree.fromId(3), tree.fromId(4), 3);
+//    tree.connect(tree.fromId(4), tree.fromId(5), 11);
+//    tree.connect(tree.fromId(5), tree.fromId(6), 19);
   
-    tree.build(0);   
+    tree.build(tree.fromId(0));
     
     Elmore el(tree);
     el.run();
 
     for(auto it = tree.G().nodes_begin(); it != tree.G().nodes_end(); ++it) {
         auto node = *it;
-        auto moments = std::make_tuple(el.firstMoment(node), el.secondMoment(node));
         printf("node %d\n", node.id());
-        printf("   ED = %lf ns\n", -1.0e9 * std::get<0>(moments));
-        printf("  D2M = %lf ns\n", 1.0e9 * D2M(std::get<0>(moments), std::get<1>(moments)));
+        printf("   ED = %lf ns\n", -1.0e9 * el.moment<1>(node));
+        printf("  D2M = %lf ns\n", 1.0e9 * D2M(el.moment<1>(node), el.moment<2>(node)));
+        const double kR = el.moment<2>(node)/std::pow(el.moment<1>(node), 2.0);
+        printf("    r = %lf\n", kR);
+        printf("log(r)= %lf\n", std::log10(kR));
+        const double theta = THETA(kR);
+        printf("theta = %lf\n", theta);
+        printf("gamma = %lf %lf\n", GAMMA(1.0+theta), std::tgamma(1.0+theta));
+        const double beta = -el.moment<1>(node)/GAMMA(1.0+theta);
+        printf(" beta = %lf\n", beta);
+        printf("  WbD = %lf ps\n", 1e12 * beta*std::pow(std::log(2.0), theta));
     }
     std::cout << std::endl;
    
