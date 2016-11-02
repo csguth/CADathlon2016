@@ -70,3 +70,23 @@ def build_fsm(expressions):
                 states_to_visit.put(state)
 
     return state_codes, edges
+
+def extract_expression(node, functions):
+    if (functions[node] == "input"):
+        return str(node.id)
+    elif (functions[node] == "inv"):
+        return "-" + extract_expression(node.input_nodes[0], functions)
+    else:
+        operator = " | " if functions[node] == "or" else " & "
+        expression = "("
+        for input_node in node.input_nodes[:-1]:
+            expression += extract_expression(input_node, functions) + operator
+        expression += extract_expression(node.input_nodes[-1], functions) + ")"
+        return expression
+
+def extract_expressions(registers, functions):
+    expressions = []
+    for register in registers:
+        expression = extract_expression(register.input_nodes[0], functions)
+        expressions.append(expression)
+    return expressions
