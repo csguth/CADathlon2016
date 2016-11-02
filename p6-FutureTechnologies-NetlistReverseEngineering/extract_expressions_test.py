@@ -40,9 +40,26 @@ functions = {
     and2: "and"
 }
 
-expressions = extract_expressions(registers, functions)
+expressions_texts = extract_expressions(registers, functions)
 
-assert "((1 | 2) & 0)" in expressions
-assert "(-1 & -2 & 0)" in expressions
+assert "1 | 2 & 0" in expressions_texts
+assert "-1 & -2 & 0" in expressions_texts
+
+expressions = [parse_expression(expression_text) for expression_text in expressions_texts]
+
+assert len(expressions[0].clauses) == 2
+assert len(expressions[0].clauses[0].terms) == 2
+assert expressions[0].clauses[0].terms[0] == Term(1, False)
+assert expressions[0].clauses[0].terms[1] == Term(2, False)
+assert len(expressions[0].clauses[1].terms) == 1
+assert expressions[0].clauses[1].terms[0] == Term(0, False)
+
+assert len(expressions[1].clauses) == 3
+assert len(expressions[1].clauses[0].terms) == 1
+assert expressions[1].clauses[0].terms[0] == Term(1, True)
+assert len(expressions[1].clauses[1].terms) == 1
+assert expressions[1].clauses[1].terms[0] == Term(2, True)
+assert len(expressions[1].clauses[2].terms) == 1
+assert expressions[1].clauses[2].terms[0] == Term(0, False)
 
 print "working! ;D"

@@ -1,6 +1,7 @@
 from sets import Set
 from Queue import Queue
 from Graph import *
+from Expression import *
 
 def find_possible_values(expression, possible_values):
     if (len(possible_values) == 2):
@@ -78,10 +79,10 @@ def extract_expression(node, functions):
         return "-" + extract_expression(node.input_nodes[0], functions)
     else:
         operator = " | " if functions[node] == "or" else " & "
-        expression = "("
+        expression = ""
         for input_node in node.input_nodes[:-1]:
             expression += extract_expression(input_node, functions) + operator
-        expression += extract_expression(node.input_nodes[-1], functions) + ")"
+        expression += extract_expression(node.input_nodes[-1], functions)
         return expression
 
 def extract_expressions(registers, functions):
@@ -90,3 +91,43 @@ def extract_expressions(registers, functions):
         expression = extract_expression(register.input_nodes[0], functions)
         expressions.append(expression)
     return expressions
+
+def parse_expression(expression_text):
+    terms = []
+    clauses = []
+    tokens = expression_text.split()
+    for token in tokens:
+        if token == "|":
+            continue
+        elif token == "&":
+            clauses.append(Clause(terms))
+            terms = []
+        else:
+            term_id = int(token) if (not token[0] == "-") else int(token[1:])
+            negated = token[0] == "-"
+            terms.append(Term(term_id, negated))
+
+    clauses.append(Clause(terms))
+    expression = Expression(clauses)
+    return expression
+
+def is_state_register(register, graph):
+    visited_nodes = Set()
+
+    nodes_to_visit = Queue()
+    nodes_to_visit.put(register)
+    while(not nodes_to_visit.empty()):
+        current_node = nodes_to_visit.get()
+        visited_nodes.add(current_node)
+
+        for output_node in current_node.output_nodes:
+            if (output_node == register):
+                return True
+            if output_node not in visited_nodes:
+                nodes_to_visit.put(output_node)
+    return False
+
+def identify_state_registers(graph, cell_types):
+    registers = [node for node in graph.nodes if cell_types[node] == "DFF"]
+    state_registers = [register for register in registers if is_state_register(register, graph)]
+    return state_registers
