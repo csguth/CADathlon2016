@@ -16,6 +16,8 @@ expression1 = Expression([clause1, clause2])
 expression2 = Expression([clause2, clause3, clause4])
 expressions = [expression1, expression2]
 
+registers_node_id = [0, 1]
+
 state_codes, edges = build_fsm(expressions)
 
 assert len(state_codes) == 3

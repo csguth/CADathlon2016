@@ -9,12 +9,23 @@ class Term:
     def __eq__(self, other_term):
         return (self.id == other_term.id) and (self.negated == other_term.negated)
 
+    def __repr__(self):
+        if (self.negated):
+            return "-" + str(self.id)
+        return str(self.id)
+
 class Clause:
     terms = []
     value = None
 
     def __init__(self, terms):
         self.terms = terms
+
+    def __repr__(self):
+        text = ""
+        for term in self.terms:
+            text += repr(term) + "|"
+        return text[:-1]
 
     def evaluate(self, terms_evaluation):
         new_terms = []
@@ -39,6 +50,12 @@ class Expression:
 
     def __init__(self, clauses):
         self.clauses = clauses
+
+    def __repr__(self):
+        text = ""
+        for clause in self.clauses:
+            text += repr(clause) + "&"
+        return text[:-1]
 
     def evaluate(self, terms_evaluation):
         new_clauses = []

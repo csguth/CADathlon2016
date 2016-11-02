@@ -41,7 +41,7 @@ def generate_states(expressions):
             new_states = next_states
     return new_states
 
-def build_fsm(expressions):
+def build_fsm(expressions, registers_node_id):
     state_codes = Set()
 
     reset_state_code = "0" * len(expressions)
@@ -59,7 +59,7 @@ def build_fsm(expressions):
         for expression in expressions:
             state_evaluation = {}
             for index, value in enumerate(current_state):
-                state_evaluation[index] = True if value == "1" else False
+                state_evaluation[registers_node_id[index]] = True if value == "1" else False
             new_expressions.append(expression.evaluate(state_evaluation))
 
         new_states = generate_states(new_expressions)
