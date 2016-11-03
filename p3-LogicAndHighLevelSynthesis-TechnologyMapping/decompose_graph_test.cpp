@@ -1,6 +1,6 @@
 #include <iostream>
 #include <GTL/graph.h>
-#include "main.cpp"
+#include "algorithms.cpp"
 
 void nand2_test() {
   node_map<cell_type> cell_types;
