@@ -5,3 +5,6 @@ all: main.cpp
 
 partition_graph_test: partition_graph_test.cpp
 	g++ -std=c++11 -static partition_graph_test.cpp -o partition_graph_test -L $(installPath)/lib -lGTL -I $(installPath)/include
+
+decompose_graph_test: decompose_graph_test.cpp
+	g++ -std=c++11 -static decompose_graph_test.cpp -o decompose_graph_test -L $(installPath)/lib -lGTL -I $(installPath)/include

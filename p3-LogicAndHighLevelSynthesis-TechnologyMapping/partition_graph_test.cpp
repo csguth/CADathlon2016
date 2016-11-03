@@ -1,6 +1,5 @@
 #include <iostream>
 #include <GTL/graph.h>
-#include <algorithm>
 #include "main.cpp"
 
 int main() {
