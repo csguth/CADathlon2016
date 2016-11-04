@@ -1,7 +1,7 @@
 #include <iostream>
-#include <GTL/graph.h>
 #include "placement.h"
 #include <assert.h>
+#include "graph.h"
 
 int main() {
     std::cout << "TPL Detailed Placement" << std::endl;
