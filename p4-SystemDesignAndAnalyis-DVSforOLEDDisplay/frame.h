@@ -19,6 +19,7 @@ using frame_storage_type = std::vector<pixel_type>;
 
 #define MAP(x,y) x*FRAME_WIDTH+y
 #define MAP_WIDTH(x,y,width) x*width+y
+#define MAP_COORD(coord, size) coord*size
 
 class Frame{
     private:
@@ -224,14 +225,42 @@ pixel_type total_sacrificed_luminance(const Frame & frame, pixel_type threshold)
     return total_sacrificed_luminance;
 }
 
+pixel_type summation_of_pixels_above_threshold(const Frame & frame, pixel_type threshold, std::pair<unsigned, unsigned> x_interval, std::pair<unsigned, unsigned> y_interval)
+{
+    pixel_type summation = 0;
+    for(unsigned i = x_interval.first; i < x_interval.second; ++i)
+    {
+        for(unsigned j = y_interval.first; j < y_interval.second; ++j)
+        {
+            if(frame.red(i,j) >= threshold || frame.green(i,j) >= threshold || frame.blue(i,j) >= threshold )
+                summation += frame.red(i,j) + frame.green(i,j) + frame.blue(i,j);
+        }
+    }
+    return summation;
+}
+
 double sacrificed_luminance_ratio(const Frame & frame, pixel_type threshold)
 {
     return (double)total_sacrificed_luminance(frame, threshold)/(double)total_sacrificed_luminance(frame, 0);
 }
 
-double sacrificed_luminance_ratio(const Frame & frame, pixel_type threshold, pixel_type total)
+double sacrificed_luminance_ratio(const Frame & frame, pixel_type threshold, pixel_type total, std::pair<unsigned, unsigned> x_interval, std::pair<unsigned, unsigned> y_interval)
 {
-    return (double)total_sacrificed_luminance(frame, threshold)/(double)total;
+    return (double)summation_of_pixels_above_threshold(frame, threshold, x_interval, y_interval)/(double)total;
+}
+
+double region_luminance(const Frame & frame, std::pair<unsigned, unsigned> x_interval, std::pair<unsigned, unsigned> y_interval)
+{
+    double luminance = 0.0;
+    unsigned den = 0;
+    for(unsigned i = x_interval.first; i < x_interval.second; ++i)
+    {
+        for(unsigned j = y_interval.first; j < y_interval.second; ++j, ++den)
+        {
+            luminance += frame.red(i,j) + frame.green(i,j) + frame.blue(i,j);
+        }
+    }
+    return luminance/den;
 }
 
 class Vdd_Regions
@@ -287,31 +316,44 @@ double lookup_gray_level_threshold(double vdd)
         return linear_interpolation(GL_threshold[next_index], GL_threshold[prev_index], next_index, prev_index, vdd);
 }
 
+//gray level to vdd
+double lut_gray_level_to_vdd(double gray_level, pixel_type luminance)
+{
+   return 0.0;
+}
+
 void spatial_vdd_optimization(Vdd_Regions & region, const Frame & frame, double max_sacrificed_lum_ratio)
 {
-    const double vdd_step = 0.1;
     const pixel_type total_luminance = total_sacrificed_luminance(frame, 0);
     
+    unsigned pixels_per_region_width = FRAME_WIDTH/region.width();
+    unsigned pixels_per_region_height = FRAME_HEIGHT/region.width();
+
     std::cout << "Spatial VDD optimization" << std::endl; 
+    constexpr std::array<double, 11> GL_threshold {
+        {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0 }
+    };
+
     for(unsigned i = 0; i < region.width(); ++i)
     {
         for(unsigned j = 0; j < region.height(); ++j)
         {
-            double region_vdd = MAX_VDD;
-            unsigned max_gray_level = std::floor(MAXIMUM_GRAY_LEVEL*lookup_gray_level_threshold(region_vdd));
-            double sr =  sacrificed_luminance_ratio(frame, max_gray_level, total_luminance);
-            
-            std::cout << "Region: " << i << "," << j << std::endl;
-            while(region_vdd > 0.0 && sr < max_sacrificed_lum_ratio)
+            double area_gl = 0.0;
+            std::pair<unsigned, unsigned> x_interval, y_interval;
+            for(auto gl : GL_threshold)
             {
-                max_gray_level = std::floor(MAXIMUM_GRAY_LEVEL*lookup_gray_level_threshold(region_vdd));
-                sr =  sacrificed_luminance_ratio(frame, max_gray_level, total_luminance);
-                std::cout << "Max Gray Level: " << max_gray_level << ", S.R.:" << sr<< std::endl;
-                region_vdd -= vdd_step; 
+                x_interval = {i*pixels_per_region_width, (i+1)*pixels_per_region_width};
+                y_interval = {j*pixels_per_region_height, (j+1)*pixels_per_region_height};
+                double sr = sacrificed_luminance_ratio(frame, gl, total_luminance, x_interval, y_interval);         
+                area_gl = gl;
+                if(sr <= max_sacrificed_lum_ratio)
+                    break;
             }
-            region.vdd(i,j,region_vdd); //take the last that is below the max ratio
+            double lum = region_luminance(frame, x_interval, y_interval);
+            double vdd = lut_gray_level_to_vdd(area_gl,lum);
+            region.vdd(i,j,vdd);
         }
-    }
+   }
 }
 
 void adjust_voltage(std::pair<unsigned, unsigned> partition_left, std::pair<unsigned, unsigned> partition_right)

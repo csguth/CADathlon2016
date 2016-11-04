@@ -47,7 +47,7 @@ int main() {
     std::cout << "SSIM: " << ssim << std::endl;
     assert(ssim == 1);
 
-    auto interval_ssim = compute_interval_ssim(frame, frame, {0,1}, {0,1});
+    auto interval_ssim = compute_interval_ssim(frame, frame, {0,2}, {0,2});
     std::cout << "Interval SSIM: " << interval_ssim << std::endl;
     assert(interval_ssim == 1);
 
@@ -61,7 +61,9 @@ int main() {
 
     std::cout << "Sacrificed luminance ratio: " << sacrificed_luminance_ratio(frame, 128) << std::endl;
     std::cout << "Sacrificed luminance ratio: " << sacrificed_luminance_ratio(frame, 254) << std::endl;
-   
+  
+    std::cout << "SR for area: " << summation_of_pixels_above_threshold(frame, 0, {0,2}, {0,2}) << std::endl;
+
     std::cout << std::endl;
     //applying spatial vdd optimization
     Vdd_Regions vdd_regions(4,MAX_VDD);

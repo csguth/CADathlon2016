@@ -59,9 +59,9 @@ class Directed_Graph
 using cost_type = int;
 
 //dijkstra min-priority queue
-cost_type shortest_path(const Directed_Graph & graph, node_id source, node_id target, const std::vector<cost_type> & edges_cost, std::vector<node_id> & prev)
+void shortest_path(const Directed_Graph & graph, node_id source, node_id target, const std::vector<cost_type> & edges_cost, std::vector<cost_type> & min_distance, std::vector<node_id> & prev)
 {
-    std::vector<cost_type> min_distance(graph.nodes_size(), std::numeric_limits<cost_type>::max());    
+    min_distance.resize(graph.nodes_size(), std::numeric_limits<cost_type>::max());    
     prev.resize(graph.nodes_size(), INVALID_NODE);    
     min_distance.at(source) = 0; 
 
@@ -72,7 +72,7 @@ cost_type shortest_path(const Directed_Graph & graph, node_id source, node_id ta
     {
         node_id u = nodes_to_process.begin()->second;
         if(u == target)
-            return min_distance.at(u);
+            return;
 
         nodes_to_process.erase(nodes_to_process.begin());
         for(auto e : graph.out_edges(u))

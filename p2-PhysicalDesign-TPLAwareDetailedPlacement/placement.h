@@ -1,6 +1,7 @@
 #include<vector>
 #include<list>
 #include<limits>
+#include<array>
 
 using location_type = std::pair<unsigned,unsigned>;
 using id_type = int;
@@ -18,11 +19,8 @@ class Cells{
         
         void preallocate(size_t size)
         {
-            if(size > locations.size())
-            {
-                locations.reserve(size);
-                widths.reserve(size);
-            }
+            locations.reserve(size);
+            widths.reserve(size);
         }
 
         id_type add(location_type location, width_type width)
@@ -44,8 +42,7 @@ class Nets{
 
         void preallocate(size_t size)
         {
-            if(size > net_cells.size())
-                net_cells.reserve(size);
+            net_cells.reserve(size);
         }
 
         id_type add(net_type&& net)
@@ -71,6 +68,8 @@ class Rows{
                 starting_y_coordinates.reserve(size);
             }
         }
+
+        size_t num_sites(id_type row){return number_of_sites.at(row);}
 
         id_type add(size_t num_sites, coordinate_type y_coordinate)
         {
@@ -114,9 +113,32 @@ class Placement{
             }
             return (max_x-min_x) + (max_y-min_y);
         }
+
+        size_t num_sites(id_type row){return rows.num_sites(row);}
         
         Cells cells;
         Nets nets;
         Rows rows;
 };
+
+using cell = size_t;
+using color = size_t;
+
+//0 to n-1
+double lut_min_distance(cell i, color p, cell j, color q)
+{
+    static constexpr size_t num_colors = 2;
+    static constexpr size_t num_cells = 2;
+    static constexpr size_t lut_width = num_colors*num_cells;
+    static constexpr std::array<int, lut_width*lut_width> lut{
+        { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}
+    };
+
+    size_t column_index = i*num_colors+p;
+    size_t row_index = j*num_colors+q;
+    size_t index = row_index*lut_width+column_index;
+    return lut[index];
+}
+
+
 
