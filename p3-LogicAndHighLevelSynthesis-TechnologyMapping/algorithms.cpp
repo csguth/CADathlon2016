@@ -1,12 +1,10 @@
 #include <iostream>
 #include <GTL/graph.h>
 
-enum logic_function{
-    INV, AND, OR, INPUT
-};
+enum cell_type {INV, AND2, OR2, NAND2, NAND3, NAND4, NOR2, NOR3, NOR4, AOI21, AOI22, OAI21, OAI22, XOR2, INPUT, OUTPUT};
 
 //verify if the two graph is isomorfic and each node are same logic function
-bool match(const node &u, const node &v, const node_map<logic_function> &map_u, const node_map<logic_function> &map_v){
+bool match(const node &u, const node &v, const node_map<cell_type> &map_u, const node_map<cell_type> &map_v){
     if(u.indeg() == 0){                                     /* Leaf of the pattern graph reached */
         return true;
     }else{
@@ -44,7 +42,6 @@ bool match(const node &u, const node &v, const node_map<logic_function> &map_u, 
 }
 
 enum node_type {ROOT, LEAF, INTERMEDIATE};
-enum cell_type {INV, AND2, OR2, NAND2, NAND3, NAND4, NOR2, NOR3, NOR4, AOI21, AOI22, OAI21, OAI22, XOR2, INPUT, OUTPUT};
 
 void get_output_nodes(node current_node, std::vector<node> & output_nodes) {
   for (auto edge_it = current_node.out_edges_begin(); edge_it != current_node.out_edges_end(); ++edge_it) {
@@ -395,45 +392,4 @@ void partition_graph(const graph & G, std::vector<graph> & forest) {
     }
     forest.push_back(tree);
   }
-}
-
-int main() {
-    std::cout << "\n RUN p3-LogicAndHighLevelSynthesis-TechnologyMapping \n" << std::endl;
-
-    graph G;
-    node_map<logic_function> node_map_G;
-    node and_G = G.new_node();
-    node inv_G = G.new_node();
-    node a_G = G.new_node();
-    node b_G = G.new_node();
-    node_map_G[and_G] = logic_function::AND;
-    node_map_G[inv_G] = logic_function::INV;
-    node_map_G[a_G] = logic_function::INPUT;
-    node_map_G[b_G] = logic_function::INPUT;
-    G.new_edge(a_G, and_G);
-    G.new_edge(b_G, inv_G);
-    G.new_edge(inv_G, and_G);
-
-    graph H;
-    node_map<logic_function> node_map_H;
-    node and_H = H.new_node();
-    node inv_H = H.new_node();
-    node a_H = H.new_node();
-    node b_H = H.new_node();
-    node_map_H[and_H] = logic_function::AND;
-    node_map_H[inv_H] = logic_function::INV;
-    node_map_H[a_H] = logic_function::INPUT;
-    node_map_H[b_H] = logic_function::INPUT;
-    H.new_edge(b_H, inv_H);
-    H.new_edge(inv_H, and_H);
-    H.new_edge(a_H, and_H);
-
-
-    if(match(and_G, and_H, node_map_G, node_map_H)){
-        std::cout << "match TRUE" << std::endl;
-    }else{
-        std::cout << "match FALSE" << std::endl;
-    }
-
-    return 0;
 }
